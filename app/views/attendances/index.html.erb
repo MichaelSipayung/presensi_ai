@@ -1,0 +1,122 @@
+<div class="max-w-2xl mx-auto mt-10 bg-white p-8 rounded-lg shadow-md">
+  <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">Presensi Wajah AI</h2>
+
+  <!-- Container Video -->
+  <div class="relative bg-gray-200 rounded-lg overflow-hidden flex justify-center items-center h-64 mb-6">
+    <video id="webcam" autoplay playsinline class="w-full h-full object-cover"></video>
+    <canvas id="canvas" class="hidden"></canvas>
+  </div>
+
+  <!-- Status Lokasi -->
+  <p id="location-status" class="text-sm text-gray-600 text-center mb-4">Mengambil lokasi GPS...</p>
+
+  <!-- Tombol Absen -->
+  <button id="btn-absen" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded transition duration-200 opacity-50 cursor-not-allowed" disabled>
+    Lakukan Presensi
+  </button>
+
+  <p id="alert-message" class="text-center mt-4 font-semibold hidden"></p>
+
+  <!-- Tabel Histori Absen -->
+  <h3 class="text-xl font-bold mt-10 mb-4">Riwayat Anda</h3>
+  <table class="min-w-full bg-white border">
+    <thead>
+      <tr class="bg-gray-100">
+        <th class="py-2 px-4 border">Waktu</th>
+        <th class="py-2 px-4 border">Status</th>
+        <th class="py-2 px-4 border">Koordinat</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @attendances.each do |att| %>
+        <tr class="text-center">
+          <td class="py-2 px-4 border"><%= att.created_at.strftime("%d-%m-%Y %H:%M") %></td>
+          <td class="py-2 px-4 border"><span class="bg-green-100 text-green-800 px-2 py-1 rounded text-sm"><%= att.status %></span></td>
+          <td class="py-2 px-4 border text-sm"><%= att.latitude %>, <%= att.longitude %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const video = document.getElementById('webcam');
+    const canvas = document.getElementById('canvas');
+    const btnAbsen = document.getElementById('btn-absen');
+    const locationStatus = document.getElementById('location-status');
+    const alertMessage = document.getElementById('alert-message');
+    
+    let currentLat = null;
+    let currentLng = null;
+
+    // 1. Akses Webcam
+    navigator.mediaDevices.getUserMedia({ video: true })
+      .then(stream => { video.srcObject = stream; })
+      .catch(err => {
+        locationStatus.innerText = "Error: Webcam tidak diizinkan!";
+        locationStatus.classList.add("text-red-500");
+      });
+
+    // 2. Ambil Lokasi GPS
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          currentLat = position.coords.latitude;
+          currentLng = position.coords.longitude;
+          locationStatus.innerText = `Lokasi ditemukan: ${currentLat.toFixed(4)}, ${currentLng.toFixed(4)}`;
+          locationStatus.classList.replace("text-gray-600", "text-green-600");
+          
+          // Aktifkan tombol jika GPS dapat
+          btnAbsen.disabled = false;
+          btnAbsen.classList.remove("opacity-50", "cursor-not-allowed");
+        },
+        (error) => {
+          locationStatus.innerText = "Gagal mengambil lokasi GPS. Izinkan akses lokasi.";
+          locationStatus.classList.replace("text-gray-600", "text-red-500");
+        }
+      );
+    }
+
+    // 3. Proses Absen (Capture & AJAX to Ruby Controller)
+    btnAbsen.addEventListener('click', () => {
+      btnAbsen.innerText = "Memproses AI...";
+      btnAbsen.disabled = true;
+
+      // Ambil foto dari video
+      const context = canvas.getContext('2d');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const base64Image = canvas.toDataURL('image/jpeg'); // Format JPEG
+
+      // Kirim ke Rails
+      fetch('/attendances/check_in', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+        },
+        body: JSON.stringify({
+          image: base64Image,
+          latitude: currentLat,
+          longitude: currentLng
+        })
+      })
+      .then(response => response.json())
+      .then(data => {
+        alertMessage.classList.remove("hidden");
+        if(data.success) {
+          alertMessage.innerText = data.message;
+          alertMessage.classList.add("text-green-600");
+          setTimeout(() => location.reload(), 2000); // Refresh tabel
+        } else {
+          alertMessage.innerText = data.message;
+          alertMessage.classList.add("text-red-600");
+          btnAbsen.innerText = "Coba Lagi";
+          btnAbsen.disabled = false;
+        }
+      });
+    });
+  });
+</script>

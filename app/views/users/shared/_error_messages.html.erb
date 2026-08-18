@@ -1,0 +1,12 @@
+<% if resource.errors.any? %>
+  <div id="error_explanation" class="bg-red-50 border border-red-400 text-red-600 px-4 py-3 rounded-lg mb-6" data-turbo-cache="false">
+    <h2 class="text-sm font-bold mb-2">
+      Terjadi <%= resource.errors.count %> kesalahan sehingga pendaftaran dibatalkan:
+    </h2>
+    <ul class="list-disc ml-5 text-sm">
+      <% resource.errors.full_messages.each do |message| %>
+        <li><%= message %></li>
+      <% end %>
+    </ul>
+  </div>
+<% end %>

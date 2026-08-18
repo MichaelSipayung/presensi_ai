@@ -1,0 +1,15 @@
+<div class="flex flex-col space-y-2 text-sm">
+  <%- if controller_name != 'sessions' %>
+    <p class="text-gray-600">
+      Sudah merekam wajah dan punya akun? 
+      <%= link_to "Masuk di sini", new_session_path(resource_name), class: "text-indigo-600 hover:text-indigo-800 font-bold" %>
+    </p>
+  <% end %>
+
+  <%- if devise_mapping.registerable? && controller_name != 'registrations' %>
+    <p class="text-gray-600">
+      Belum punya akun? 
+      <%= link_to "Daftar & Rekam Wajah", new_registration_path(resource_name), class: "text-indigo-600 hover:text-indigo-800 font-bold" %>
+    </p>
+  <% end %>
+</div>
