@@ -111,11 +111,13 @@ class Users::RegistrationsController < Devise::RegistrationsController
         #existing_duplicate = User.nearest_neighbors(:face_embedding, camera_vector, distance: "cosine").first
         
         # gunakan data yang sudah dienkripsi untuk pencarian duplikasi
-        existing_duplicate = User.nearest_neighbors(:face_embedding, secure_camera_vector, distance: "cosine").first
+        existing_duplicate = User.nearest_neighbors(:face_embedding, secure_camera_vector, 
+          distance: "cosine").first
 
         if existing_duplicate.present? && existing_duplicate.neighbor_distance <= threshold_distance
-          # JIKA WAJAH SUDAH ADA -> TOLAK PENDAFTARAN
-          resource.errors.add(:base, "Registrasi ditolak! Wajah Anda sudah terdaftar di dalam sistem atas nama '#{existing_duplicate.name}'. Satu wajah hanya dapat mendaftarkan satu akun.")
+          # wajah sudah terdaftar, tolak pendaftaran!
+          resource.errors.add(:base, "Registrasi ditolak! Wajah Anda sudah terdaftar di dalam sistem atas nama '
+            #{existing_duplicate.name}'. Satu wajah hanya dapat mendaftarkan satu akun.")
           clean_up_passwords resource
           set_minimum_password_length
           return render :new, status: :unprocessable_entity
