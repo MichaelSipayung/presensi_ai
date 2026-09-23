@@ -76,11 +76,12 @@ class AttendancesController < ApplicationController
       # 2. Persiapan Vektor
       camera_vector = FaceRecognitionService.hex_to_float_array(result[:embedding])
 
-      #encrypt vector menggunakan permutasi
-      secure_camera_vector = FaceRecognitionService.encrypt_vector(camera_vector)
+      # encrypt vector menggunakan permutasi
+      # secure_camera_vector = FaceRecognitionService.encrypt_vector(camera_vector)
+      # by qr
+      secure_camera_vector = VectorRotationCipher.encrypt_vector(camera_vector)
       # 3. Mode Pgvector
       threshold_distance = 0.35 # Setara dengan similarity >= 0.65
-      
       # best_match_user = User.nearest_neighbors(:face_embedding, camera_vector, distance: "cosine").first
       best_match_user = User.nearest_neighbors(:face_embedding, secure_camera_vector, distance: "cosine").first
       # 4. Keputusan Presensi

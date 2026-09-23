@@ -25,7 +25,6 @@
 
 #           # Ubah hex dari database kembali ke array float
 #           existing_float_vector = FaceRecognitionService.hex_to_float_array(existing_user.face_embedding)
-          
 #           # Hitung cosine similarity di Ruby
 #           similarity = FaceRecognitionService.cosine_similarity(new_float_vector, existing_float_vector)
 
@@ -88,7 +87,7 @@
 # end
 
 class Users::RegistrationsController < Devise::RegistrationsController
-  before_action :configure_sign_up_params, only: [:create]
+  before_action :configure_sign_up_params, only: [ :create ]
 
   def create
     build_resource(sign_up_params.except(:face_image))
@@ -101,17 +100,17 @@ class Users::RegistrationsController < Devise::RegistrationsController
         # Konversi hex ke array float
         camera_vector = FaceRecognitionService.hex_to_float_array(result[:embedding])
         # permutasi vektor -- encryption mode
-        secure_camera_vector = FaceRecognitionService.encrypt_vector(camera_vector)
+        # secure_camera_vector = FaceRecognitionService.encrypt_vector(camera_vector)
+        # by qr
+        secure_camera_vector = VectorRotationCipher.encrypt_vector(camera_vector)
         # ====================================================================
         # TAHAP BARU: CEK DUPLIKASI WAJAH (DEDUPLIKASI BIOMETRIK)
         # ====================================================================
         threshold_distance = 0.35 # Batas wajar model SFace (Cosine Distance)
-        
         # Cari apakah ada user di database yang wajahnya mirip dengan pendaftar ini
-        #existing_duplicate = User.nearest_neighbors(:face_embedding, camera_vector, distance: "cosine").first
-        
+        # existing_duplicate = User.nearest_neighbors(:face_embedding, camera_vector, distance: "cosine").first
         # gunakan data yang sudah dienkripsi untuk pencarian duplikasi
-        existing_duplicate = User.nearest_neighbors(:face_embedding, secure_camera_vector, 
+        existing_duplicate = User.nearest_neighbors(:face_embedding, secure_camera_vector,
           distance: "cosine").first
 
         if existing_duplicate.present? && existing_duplicate.neighbor_distance <= threshold_distance
@@ -125,7 +124,7 @@ class Users::RegistrationsController < Devise::RegistrationsController
         # ====================================================================
 
         # Jika lolos cek duplikasi, simpan vektor ke akun baru
-        #resource.face_embedding = camera_vector
+        # resource.face_embedding = camera_vector
         # simpan vektor terenkripsi ke database
         resource.face_embedding = secure_camera_vector
       else
