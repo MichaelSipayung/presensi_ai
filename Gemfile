@@ -71,3 +71,5 @@ end
 gem "devise", "~> 5.0"
 
 gem "neighbor", "~> 1.2"
+
+gem "csv", "~> 3.2"
