@@ -23,7 +23,7 @@ class AttendancesController < ApplicationController
     global_vector = VectorRotationCipher.apply_global_rotation(camera_vector)
     hash, probe_hashes = VectorRotationCipher.tier1_hash_and_probes(global_vector)
 
-    best_user, best_similarity = VectorRotationCipher.search_with_logging(
+    best_user, best_similarity = VectorRotationCipher.search_with_logging2(
       event_type: "attendance",
       global_vector: global_vector,
       hash: hash,

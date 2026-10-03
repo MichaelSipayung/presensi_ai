@@ -149,6 +149,52 @@ class VectorRotationCipher
     [ best_user, best_similarity ]
   end
 
+  def self.search_with_logging2(event_type:, global_vector:, hash:, probe_hashes:, threshold_distance:)
+    t_start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+
+    # 1. Fase Probe Standar (Tier 1 Hash + Probes)
+    candidates = User.where(tier1_hash: probe_hashes)
+    probe_candidate_count = candidates.count
+    best_user, best_similarity = find_best_match(candidates, global_vector)
+
+    t_after_probe = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+    probe_time_ms = (t_after_probe - t_start) * 1000.0
+
+    # Cek apakah butuh perluasan pencarian heuristik
+    used_fallback = best_user.nil? || (1.0 - best_similarity) > threshold_distance
+    fallback_time_ms = 0.0
+    fallback_candidate_count = 0
+
+    if used_fallback
+      # 🚀 INOVASI HEURISTIK: ADAPTIVE NEIGHBOR PROBING (Pengganti Fallback Linear)
+      # Alih-alih mengecek 40.000 data, AI/Heuristik menebak 50 hash terdekat berdasar Hamming Distance!
+      heuristic_candidates = adaptive_neighbor_search(hash, limit: 50)
+      fallback_candidate_count = heuristic_candidates.count
+      best_user, best_similarity = find_best_match(heuristic_candidates, global_vector)
+      t_after_fallback = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      fallback_time_ms = (t_after_fallback - t_after_probe) * 1000.0
+    end
+
+    total_time_ms = probe_time_ms + fallback_time_ms
+    match_found = best_user.present? && (1.0 - best_similarity) <= threshold_distance
+
+    # PerformanceLog.create!(
+    #   event_type: event_type,
+    #   tier1_hash: hash,
+    #   probe_candidate_count: probe_candidate_count,
+    #   used_fallback: used_fallback, # Sekarang ini merepresentasikan "Heuristik Probing"
+    #   fallback_candidate_count: fallback_candidate_count,
+    #   probe_time_ms: probe_time_ms.round(4),
+    #   fallback_time_ms: fallback_time_ms.round(4),
+    #   total_time_ms: total_time_ms.round(4),
+    #   best_similarity: best_similarity.round(6),
+    #   match_found: match_found,
+    #   matched_user_id: match_found ? best_user.id : nil
+    # )
+
+    [ best_user, best_similarity ]
+  end
+
   # ============================================================
   # Utilitas
   # ============================================================
@@ -171,6 +217,34 @@ class VectorRotationCipher
       end
 
       dot
+  end
+
+  # ============================================================
+  # INOVASI HEURISTIK: Adaptive Neighbor Probing (Hamming Distance)
+  # ============================================================
+  def self.adaptive_neighbor_search(target_hash, limit: 50)
+    # Menggunakan fungsi heuristik SQL untuk mencari hash di database 
+    # yang memiliki perbedaan karakter paling sedikit (Hamming / Levenshtein ringan)
+    # PostgreSQL mendukung operator kesamaan atau kita bisa mencocokkan kemiripan string biner.
+    # Untuk performa maksimal di PostgreSQL, kita urutkan berdasarkan kemiripan string 
+    # atau kita ambil kandidat terdekat secara cerdas.
+    # Alternatif tercepat di Rails tanpa ekstensi tambahan adalah memanfaatkan kesamaan awalan/substring 
+    # atau menggunakan query SQL ORDER BY dengan fungsi selisih karakter.
+    # Query di bawah ini mencari user dan merankingnya berdasarkan seberapa "mirip" 
+    # tier1_hash mereka dengan target_hash secara bit-by-bit.
+    # Catatan: Karena tier1_hash adalah string biner '10110...', kita bisa membandingkannya.
+    # Untuk pendekatan heuristik AI Best-First Search, kita ambil user yang memiliki kecocokan bit tertinggi.
+    # User.where.not(tier1_hash: nil)
+    #     .order(Arel.sql("levenshtein(tier1_hash, '#{target_hash}') ASC"))
+    #     .limit(limit)
+    #     .to_a
+    sanitized_order = ActiveRecord::Base.sanitize_sql_array(
+      [ "levenshtein(tier1_hash, ?) ASC", target_hash ]
+    )
+    User.where.not(tier1_hash: nil)
+      .order(Arel.sql(sanitized_order))
+      .limit(limit)
+      .to_a
   end
 end
 
