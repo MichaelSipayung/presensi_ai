@@ -1,5 +1,5 @@
 class Users::RegistrationsController < Devise::RegistrationsController
-  before_action :configure_sign_up_params, only: [:create]
+  before_action :configure_sign_up_params, only: [ :create ]
 
   THRESHOLD_DISTANCE = 0.35  # cosine distance; similarity >= 0.65 dianggap wajah sama
 
@@ -23,7 +23,8 @@ class Users::RegistrationsController < Devise::RegistrationsController
     end
 
     camera_vector = FaceRecognitionService.hex_to_float_array(result[:embedding])
-
+    # Normalisasi vektor sebelum masuk ke sistem cipher
+    camera_vector = VectorRotationCipher.l2_normalize(camera_vector)
     # ---- Rotasi global (sekali) + hash Tier 1 + daftar varian probe ----
     global_vector = VectorRotationCipher.apply_global_rotation(camera_vector)
     hash, probe_hashes = VectorRotationCipher.tier1_hash_and_probes(global_vector)
@@ -76,6 +77,6 @@ class Users::RegistrationsController < Devise::RegistrationsController
   protected
 
   def configure_sign_up_params
-    devise_parameter_sanitizer.permit(:sign_up, keys: [:name, :face_image])
+    devise_parameter_sanitizer.permit(:sign_up, keys: [ :name, :face_image ])
   end
 end

@@ -18,6 +18,8 @@ class AttendancesController < ApplicationController
     end
 
     camera_vector = FaceRecognitionService.hex_to_float_array(result[:embedding])
+    # normalisasi vektor sebelum masuk ke sistem cipher
+    camera_vector = VectorRotationCipher.l2_normalize(camera_vector)
     global_vector = VectorRotationCipher.apply_global_rotation(camera_vector)
     hash, probe_hashes = VectorRotationCipher.tier1_hash_and_probes(global_vector)
 
@@ -28,6 +30,7 @@ class AttendancesController < ApplicationController
       probe_hashes: probe_hashes,
       threshold_distance: THRESHOLD_DISTANCE
     )
+
 
     if best_user.present? && (1.0 - best_similarity) <= THRESHOLD_DISTANCE
       best_user.attendances.create!(

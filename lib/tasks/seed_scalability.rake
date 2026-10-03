@@ -17,6 +17,8 @@ namespace :performance do
     begin
       count.times do |i|
         camera_vector = Array.new(VectorRotationCipher::DIM) { rand(-2.0..2.0) }
+        # normalize camera_vector supaya panjangnya 1.0 (unit vector)
+        camera_vector = VectorRotationCipher.l2_normalize(camera_vector)
         global_vector  = VectorRotationCipher.apply_global_rotation(camera_vector)
         hash, _probes  = VectorRotationCipher.tier1_hash_and_probes(global_vector)
         user_key       = VectorRotationCipher.generate_user_key
@@ -56,13 +58,15 @@ namespace :performance do
   end
 
   desc "Benchmark probe vs fallback pada skala N saat ini, pakai vektor query ACAK"
-  task :benchmark_at_current_scale, [:trials] => :environment do |_t, args|
+  task :benchmark_at_current_scale, [ :trials ] => :environment do |_t, args|
     trials = (args[:trials] || 20).to_i
     n = User.count
+    PerformanceLog.where(event_type: "benchmark_n#{n}").delete_all
     puts "[INFO] N saat ini = #{n} user. Menjalankan #{trials} percobaan query acak..."
 
     trials.times do
       camera_vector = Array.new(VectorRotationCipher::DIM) { rand(-2.0..2.0) }
+      camera_vector = VectorRotationCipher.l2_normalize(camera_vector)
       global_vector = VectorRotationCipher.apply_global_rotation(camera_vector)
       hash, probe_hashes = VectorRotationCipher.tier1_hash_and_probes(global_vector)
 
