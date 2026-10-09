@@ -9,4 +9,5 @@ class User < ApplicationRecord
   has_many :attendances, dependent: :destroy
 
   has_neighbors :face_embedding,  dimensions: 128
+  encrypts :tier2_user_key   # <-- active record encryption, otomatis terenkripsi saat save
 end

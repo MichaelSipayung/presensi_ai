@@ -10,8 +10,9 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_02_040338) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_09_091537) do
   # These are extensions that must be enabled in order to support this database
+  enable_extension "fuzzystrmatch"
   enable_extension "pg_catalog.plpgsql"
   enable_extension "vector"
 
@@ -28,14 +29,19 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_02_040338) do
 
   create_table "performance_logs", force: :cascade do |t|
     t.float "best_similarity"
+    t.float "brightness_score"
     t.datetime "created_at", null: false
     t.string "event_type"
     t.integer "fallback_candidate_count"
     t.float "fallback_time_ms"
+    t.integer "fuzzy_k_limit"
+    t.string "fuzzy_status"
+    t.float "fuzzy_threshold"
     t.boolean "match_found"
     t.bigint "matched_user_id"
     t.integer "probe_candidate_count"
     t.float "probe_time_ms"
+    t.float "sharpness_score"
     t.string "tier1_hash"
     t.float "total_time_ms"
     t.datetime "updated_at", null: false
@@ -52,6 +58,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_02_040338) do
     t.datetime "remember_created_at"
     t.datetime "reset_password_sent_at"
     t.string "reset_password_token"
+    t.bit "sketch", limit: 64
     t.string "tier1_hash", limit: 16
     t.text "tier2_user_key"
     t.text "tier2_vector"

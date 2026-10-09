@@ -1,0 +1,259 @@
+hannah@DESKTOP-BBFNOIL:~/presensi_ai$ LIMIT_PER_DATASET=20 rails calibration:build_cache
+[INFO] total=40 sudah_cache=0 akan_diproses=40
+[SELESAI] ok=39 gagal=1 -> /home/hannah/presensi_ai/tmp/calibration_cache.jsonl
+hannah@DESKTOP-BBFNOIL:~/presensi_ai$ rm tmp/calibration_cache.jsonl
+hannah@DESKTOP-BBFNOIL:~/presensi_ai$ LIMIT_PER_DATASET=20 rails calibration:build_cache
+[INFO] total=40 sudah_cache=0 akan_diproses=40
+[SELESAI] ok=39 gagal=1 -> /home/hannah/presensi_ai/tmp/calibration_cache.jsonl
+hannah@DESKTOP-BBFNOIL:~/presensi_ai$ rm tmp/calibration_cache.jsonl
+hannah@DESKTOP-BBFNOIL:~/presensi_ai$ nohup rails calibration:build_cache > tmp/build_cache.log 2>&1 &
+[5] 23559
+hannah@DESKTOP-BBFNOIL:~/presensi_ai$ tail -f tmp/build_cache.log
+nohup: ignoring input
+[INFO] total=9157 sudah_cache=0 akan_diproses=9157
+  [50/9157] ok=50 gagal=0 ETA 54.4 menit
+  [100/9157] ok=99 gagal=1 ETA 56.7 menit
+  [150/9157] ok=149 gagal=1 ETA 57.6 menit
+  [200/9157] ok=198 gagal=2 ETA 58.2 menit
+  [250/9157] ok=248 gagal=2 ETA 54.8 menit
+  [300/9157] ok=298 gagal=2 ETA 52.2 menit
+  [350/9157] ok=348 gagal=2 ETA 53.2 menit
+  [400/9157] ok=398 gagal=2 ETA 53.9 menit
+  [450/9157] ok=446 gagal=4 ETA 53.8 menit
+  [500/9157] ok=496 gagal=4 ETA 54.2 menit
+  [550/9157] ok=545 gagal=5 ETA 54.3 menit
+  [600/9157] ok=595 gagal=5 ETA 54.4 menit
+  [650/9157] ok=645 gagal=5 ETA 54.4 menit
+  [700/9157] ok=693 gagal=7 ETA 53.8 menit
+  [750/9157] ok=743 gagal=7 ETA 52.8 menit
+  [800/9157] ok=793 gagal=7 ETA 52.6 menit
+  [850/9157] ok=843 gagal=7 ETA 52.6 menit
+  [900/9157] ok=892 gagal=8 ETA 52.6 menit
+  [950/9157] ok=942 gagal=8 ETA 52.5 menit
+  [1000/9157] ok=992 gagal=8 ETA 52.4 menit
+  [1050/9157] ok=1042 gagal=8 ETA 52.4 menit
+  [1100/9157] ok=1091 gagal=9 ETA 52.2 menit
+  [1150/9157] ok=1141 gagal=9 ETA 51.8 menit
+  [1200/9157] ok=1190 gagal=10 ETA 51.3 menit
+  [1250/9157] ok=1239 gagal=11 ETA 50.9 menit
+  [1300/9157] ok=1288 gagal=12 ETA 50.9 menit
+  [1350/9157] ok=1337 gagal=13 ETA 50.7 menit
+  [1400/9157] ok=1387 gagal=13 ETA 50.7 menit
+  [1450/9157] ok=1437 gagal=13 ETA 50.6 menit
+  [1500/9157] ok=1486 gagal=14 ETA 50.5 menit
+  [1550/9157] ok=1535 gagal=15 ETA 50.4 menit
+  [1600/9157] ok=1585 gagal=15 ETA 50.3 menit
+  [1650/9157] ok=1634 gagal=16 ETA 50.0 menit
+  [1700/9157] ok=1683 gagal=17 ETA 49.7 menit
+  [1750/9157] ok=1732 gagal=18 ETA 49.4 menit
+  [1800/9157] ok=1782 gagal=18 ETA 49.1 menit
+  [1850/9157] ok=1832 gagal=18 ETA 48.8 menit
+  [1900/9157] ok=1882 gagal=18 ETA 48.4 menit
+  [1950/9157] ok=1931 gagal=19 ETA 48.1 menit
+  [2000/9157] ok=1980 gagal=20 ETA 47.8 menit
+  [2050/9157] ok=2028 gagal=22 ETA 47.4 menit
+  [2100/9157] ok=2077 gagal=23 ETA 47.0 menit
+  [2150/9157] ok=2127 gagal=23 ETA 46.5 menit
+  [2200/9157] ok=2177 gagal=23 ETA 45.9 menit
+  [2250/9157] ok=2226 gagal=24 ETA 45.3 menit
+  [2300/9157] ok=2276 gagal=24 ETA 44.7 menit
+  [2350/9157] ok=2324 gagal=26 ETA 44.1 menit
+  [2400/9157] ok=2371 gagal=29 ETA 43.5 menit
+  [2450/9157] ok=2421 gagal=29 ETA 43.0 menit
+  [2500/9157] ok=2471 gagal=29 ETA 42.4 menit
+  [2550/9157] ok=2520 gagal=30 ETA 41.9 menit
+  [2600/9157] ok=2569 gagal=31 ETA 41.5 menit
+  [2650/9157] ok=2619 gagal=31 ETA 40.9 menit
+  [2700/9157] ok=2668 gagal=32 ETA 40.4 menit
+  [2750/9157] ok=2715 gagal=35 ETA 39.9 menit
+  [2800/9157] ok=2765 gagal=35 ETA 39.4 menit
+  [2850/9157] ok=2815 gagal=35 ETA 39.0 menit
+  [2900/9157] ok=2865 gagal=35 ETA 38.5 menit
+  [2950/9157] ok=2915 gagal=35 ETA 38.0 menit
+  [3000/9157] ok=2965 gagal=35 ETA 37.6 menit
+  [3050/9157] ok=3015 gagal=35 ETA 37.1 menit
+  [3100/9157] ok=3065 gagal=35 ETA 36.7 menit
+  [3150/9157] ok=3114 gagal=36 ETA 36.3 menit
+  [3200/9157] ok=3162 gagal=38 ETA 35.8 menit
+  [3250/9157] ok=3212 gagal=38 ETA 35.6 menit
+  [3300/9157] ok=3261 gagal=39 ETA 35.4 menit
+  [3350/9157] ok=3310 gagal=40 ETA 35.2 menit
+  [3400/9157] ok=3359 gagal=41 ETA 34.9 menit
+  [3450/9157] ok=3408 gagal=42 ETA 34.5 menit
+  [3500/9157] ok=3458 gagal=42 ETA 34.1 menit
+  [3550/9157] ok=3507 gagal=43 ETA 33.7 menit
+  [3600/9157] ok=3556 gagal=44 ETA 33.3 menit
+  [3650/9157] ok=3605 gagal=45 ETA 32.9 menit
+  [3700/9157] ok=3654 gagal=46 ETA 32.5 menit
+  [3750/9157] ok=3704 gagal=46 ETA 32.3 menit
+  [3800/9157] ok=3753 gagal=47 ETA 32.1 menit
+  [3850/9157] ok=3802 gagal=48 ETA 31.9 menit
+  [3900/9157] ok=3851 gagal=49 ETA 31.4 menit
+  [3950/9157] ok=3900 gagal=50 ETA 31.1 menit
+  [4000/9157] ok=3949 gagal=51 ETA 30.7 menit
+  [4050/9157] ok=3999 gagal=51 ETA 30.3 menit
+  [4100/9157] ok=4048 gagal=52 ETA 29.9 menit
+  [4150/9157] ok=4097 gagal=53 ETA 29.6 menit
+  [4200/9157] ok=4147 gagal=53 ETA 29.2 menit
+  [4250/9157] ok=4196 gagal=54 ETA 28.8 menit
+  [4300/9157] ok=4246 gagal=54 ETA 28.5 menit
+  [4350/9157] ok=4295 gagal=55 ETA 28.1 menit
+  [4400/9157] ok=4343 gagal=57 ETA 27.8 menit
+  [4450/9157] ok=4392 gagal=58 ETA 27.4 menit
+  [4500/9157] ok=4442 gagal=58 ETA 27.1 menit
+  [4550/9157] ok=4490 gagal=60 ETA 26.7 menit
+  [4600/9157] ok=4539 gagal=61 ETA 26.4 menit
+  [4650/9157] ok=4588 gagal=62 ETA 26.1 menit
+  [4700/9157] ok=4638 gagal=62 ETA 25.9 menit
+  [4750/9157] ok=4688 gagal=62 ETA 25.7 menit
+  [4800/9157] ok=4738 gagal=62 ETA 25.5 menit
+  [4850/9157] ok=4788 gagal=62 ETA 25.3 menit
+  [4900/9157] ok=4836 gagal=64 ETA 25.0 menit
+  [4950/9157] ok=4886 gagal=64 ETA 24.8 menit
+  [5000/9157] ok=4936 gagal=64 ETA 24.5 menit
+  [5050/9157] ok=4986 gagal=64 ETA 24.2 menit
+  [5100/9157] ok=5034 gagal=66 ETA 23.9 menit
+  [5150/9157] ok=5084 gagal=66 ETA 23.7 menit
+  [5200/9157] ok=5133 gagal=67 ETA 23.4 menit
+  [5250/9157] ok=5183 gagal=67 ETA 23.2 menit
+  [5300/9157] ok=5233 gagal=67 ETA 22.9 menit
+  [5350/9157] ok=5283 gagal=67 ETA 22.6 menit
+  [5400/9157] ok=5333 gagal=67 ETA 22.2 menit
+  [5450/9157] ok=5383 gagal=67 ETA 21.9 menit
+  [5500/9157] ok=5433 gagal=67 ETA 21.6 menit
+  [5550/9157] ok=5483 gagal=67 ETA 21.2 menit
+  [5600/9157] ok=5533 gagal=67 ETA 20.9 menit
+  [5650/9157] ok=5582 gagal=68 ETA 20.6 menit
+  [5700/9157] ok=5631 gagal=69 ETA 20.2 menit
+  [5750/9157] ok=5681 gagal=69 ETA 19.9 menit
+  [5800/9157] ok=5731 gagal=69 ETA 19.6 menit
+  [5850/9157] ok=5781 gagal=69 ETA 19.3 menit
+  [5900/9157] ok=5831 gagal=69 ETA 19.0 menit
+  [5950/9157] ok=5878 gagal=72 ETA 18.6 menit
+  [6000/9157] ok=5927 gagal=73 ETA 18.3 menit
+  [6050/9157] ok=5977 gagal=73 ETA 18.0 menit
+  [6100/9157] ok=6027 gagal=73 ETA 17.7 menit
+  [6150/9157] ok=6076 gagal=74 ETA 17.4 menit
+  [6200/9157] ok=6125 gagal=75 ETA 17.1 menit
+  [6250/9157] ok=6174 gagal=76 ETA 16.8 menit
+  [6300/9157] ok=6224 gagal=76 ETA 16.4 menit
+  [6350/9157] ok=6274 gagal=76 ETA 16.1 menit
+  [6400/9157] ok=6324 gagal=76 ETA 15.8 menit
+  [6450/9157] ok=6373 gagal=77 ETA 15.5 menit
+  [6500/9157] ok=6423 gagal=77 ETA 15.2 menit
+  [6550/9157] ok=6472 gagal=78 ETA 14.9 menit
+  [6600/9157] ok=6522 gagal=78 ETA 14.6 menit
+  [6650/9157] ok=6572 gagal=78 ETA 14.3 menit
+  [6700/9157] ok=6621 gagal=79 ETA 14.1 menit
+  [6750/9157] ok=6669 gagal=81 ETA 13.8 menit
+  [6800/9157] ok=6718 gagal=82 ETA 13.5 menit
+  [6850/9157] ok=6766 gagal=84 ETA 13.3 menit
+  [6900/9157] ok=6815 gagal=85 ETA 13.0 menit
+  [6950/9157] ok=6864 gagal=86 ETA 12.8 menit
+  [7000/9157] ok=6914 gagal=86 ETA 12.5 menit
+  [7050/9157] ok=6964 gagal=86 ETA 12.2 menit
+  [7100/9157] ok=7014 gagal=86 ETA 12.0 menit
+  [7150/9157] ok=7064 gagal=86 ETA 11.7 menit
+  [7200/9157] ok=7114 gagal=86 ETA 11.4 menit
+  [7250/9157] ok=7162 gagal=88 ETA 11.2 menit
+  [7300/9157] ok=7212 gagal=88 ETA 10.9 menit
+  [7350/9157] ok=7261 gagal=89 ETA 10.6 menit
+  [7400/9157] ok=7311 gagal=89 ETA 10.4 menit
+  [7450/9157] ok=7358 gagal=92 ETA 10.1 menit
+  [7500/9157] ok=7388 gagal=112 ETA 9.8 menit
+  [7550/9157] ok=7419 gagal=131 ETA 9.4 menit
+  [7600/9157] ok=7457 gagal=143 ETA 9.1 menit
+  [7650/9157] ok=7486 gagal=164 ETA 8.8 menit
+  [7700/9157] ok=7513 gagal=187 ETA 8.5 menit
+  [7750/9157] ok=7533 gagal=217 ETA 8.2 menit
+  [7800/9157] ok=7567 gagal=233 ETA 7.9 menit
+  [7850/9157] ok=7592 gagal=258 ETA 7.6 menit
+  [7900/9157] ok=7621 gagal=279 ETA 7.3 menit
+  [7950/9157] ok=7641 gagal=309 ETA 7.0 menit
+  [8000/9157] ok=7671 gagal=329 ETA 6.7 menit
+  [8050/9157] ok=7704 gagal=346 ETA 6.4 menit
+  [8100/9157] ok=7736 gagal=364 ETA 6.1 menit
+  [8150/9157] ok=7766 gagal=384 ETA 5.8 menit
+  [8200/9157] ok=7790 gagal=410 ETA 5.5 menit
+  [8250/9157] ok=7821 gagal=429 ETA 5.2 menit
+  [8300/9157] ok=7853 gagal=447 ETA 4.9 menit
+  [8350/9157] ok=7886 gagal=464 ETA 4.6 menit
+  [8400/9157] ok=7919 gagal=481 ETA 4.3 menit
+  [8450/9157] ok=7947 gagal=503 ETA 4.0 menit
+  [8500/9157] ok=7980 gagal=520 ETA 3.7 menit
+  [8550/9157] ok=7998 gagal=552 ETA 3.4 menit
+  [8600/9157] ok=8027 gagal=573 ETA 3.2 menit
+  [8650/9157] ok=8045 gagal=605 ETA 2.9 menit
+  [8700/9157] ok=8069 gagal=631 ETA 2.6 menit
+  [8750/9157] ok=8093 gagal=657 ETA 2.3 menit
+  [8800/9157] ok=8123 gagal=677 ETA 2.0 menit
+  [8850/9157] ok=8149 gagal=701 ETA 1.7 menit
+  [8900/9157] ok=8172 gagal=728 ETA 1.4 menit
+  [8950/9157] ok=8211 gagal=739 ETA 1.2 menit
+  [9000/9157] ok=8233 gagal=767 ETA 0.9 menit
+  [9050/9157] ok=8267 gagal=783 ETA 0.6 menit
+  [9100/9157] ok=8291 gagal=809 ETA 0.3 menit
+  [9150/9157] ok=8322 gagal=828 ETA 0.0 menit
+[SELESAI] ok=8322 gagal=835 -> /home/hannah/presensi_ai/tmp/calibration_cache.jsonl
+^C[5]   Done                    nohup rails calibration:build_cache > tmp/build_cache.log 2>&1
+
+hannah@DESKTOP-BBFNOIL:~/presensi_ai$ rails calibration:analyze
+[INFO] galeri=5710 query=2595 near_zero=8 tau=0.65
+[CEK ISOMETRI] selisih = 4.163336342344337e-17
+  [200/2595]
+  [400/2595]
+  [600/2595]
+  [800/2595]
+  [1000/2595]
+  [1200/2595]
+  [1400/2595]
+  [1600/2595]
+  [1800/2595]
+  [2000/2595]
+  [2200/2595]
+  [2400/2595]
+
+[SUKSES] 2595 baris -> /home/hannah/presensi_ai/tmp/calibration_results_20261008_203748.csv
+
+== SEMUA (n=2595) ==
+genuine  p10/p50/p90: 0.531 / 0.713 / 0.884
+impostor p10/p50/p90: 0.342 / 0.390 / 0.440
+FRR@0.65 = 31.8%   FAR(open-set)@0.65 = 0.6%
+Full scan sukses     : 68.1%
+Probe-hit (hash true masuk varian probe): 28.9%
+Sistem (probe -> K=50  ): 33.1%
+Sistem (probe -> K=100 ): 37.3%
+Sistem (probe -> K=200 ): 43.6%
+Sistem (probe -> K=500 ): 54.2%
+Sistem (probe -> K=1000): 61.3%
+Sistem (probe -> K=2000): 65.3%
+
+== LFW (n=1639) ==
+genuine  p10/p50/p90: 0.488 / 0.673 / 0.803
+impostor p10/p50/p90: 0.366 / 0.404 / 0.452
+FRR@0.65 = 42.2%   FAR(open-set)@0.65 = 0.9%
+Full scan sukses     : 57.6%
+Probe-hit (hash true masuk varian probe): 19.6%
+Sistem (probe -> K=50  ): 22.9%
+Sistem (probe -> K=100 ): 27.0%
+Sistem (probe -> K=200 ): 34.5%
+Sistem (probe -> K=500 ): 43.9%
+Sistem (probe -> K=1000): 51.0%
+Sistem (probe -> K=2000): 54.8%
+
+== YALE (n=956) ==
+genuine  p10/p50/p90: 0.624 / 0.814 / 0.923
+impostor p10/p50/p90: 0.330 / 0.363 / 0.408
+FRR@0.65 = 13.9%   FAR(open-set)@0.65 = 0.0%
+Full scan sukses     : 86.1%
+Probe-hit (hash true masuk varian probe): 45.0%
+Sistem (probe -> K=50  ): 50.5%
+Sistem (probe -> K=100 ): 54.8%
+Sistem (probe -> K=200 ): 59.3%
+Sistem (probe -> K=500 ): 71.8%
+Sistem (probe -> K=1000): 79.1%
+Sistem (probe -> K=2000): 83.3%
+
+== SWEEP THRESHOLD (FRR% / FAR%) ==
+LFW  0.50: 11/3  0.55: 17/2  0.60: 28/1  0.65: 42/1  0.70: 58/1  0.75: 76/0  0.80: 90/0
+YALE  0.50: 1/0  0.55: 3/0  0.60: 8/0  0.65: 14/0  0.70: 24/0  0.75: 36/0  0.80: 47/0

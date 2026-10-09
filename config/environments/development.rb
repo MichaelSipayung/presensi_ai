@@ -78,4 +78,5 @@ Rails.application.configure do
   config.log_level = ENV.fetch("RAILS_LOG_LEVEL", "info")
   # Mengizinkan semua subdomain ngrok secara otomatis
   config.hosts << ".ngrok-free.app"
+  # config.active_record.encryption.support_unencrypted_data = true
 end

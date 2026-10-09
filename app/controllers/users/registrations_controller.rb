@@ -1,8 +1,8 @@
 class Users::RegistrationsController < Devise::RegistrationsController
   before_action :configure_sign_up_params, only: [ :create ]
 
-  THRESHOLD_DISTANCE = 0.35  # cosine distance; similarity >= 0.65 dianggap wajah sama
-
+  # THRESHOLD_DISTANCE = 0.35  # cosine distance; similarity >= 0.65 dianggap wajah sama
+  THRESHOLD_DISTANCE = 1.0 - FaceMatching::TAU
   def create
     build_resource(sign_up_params.except(:face_image))
 
@@ -30,16 +30,13 @@ class Users::RegistrationsController < Devise::RegistrationsController
     hash, probe_hashes = VectorRotationCipher.tier1_hash_and_probes(global_vector)
 
     # ---- CEK DUPLIKASI: multi-probe + fallback otomatis, sekaligus tercatat di PerformanceLog ----
-    duplicate_user, duplicate_similarity = VectorRotationCipher.search_with_logging(
-      event_type: "registration_dedup",
-      global_vector: global_vector,
-      hash: hash,
-      probe_hashes: probe_hashes,
-      threshold_distance: THRESHOLD_DISTANCE
+    duplicate_user, duplicate_similarity = VectorRotationCipher.search_full_scan(
+      event_type: "registration_dedup_fullscan",
+      global_vector: global_vector, tau: FaceMatching::TAU
     )
 
-    if duplicate_user.present? && (1.0 - duplicate_similarity) <= THRESHOLD_DISTANCE
-      resource.errors.add(:base,
+    if duplicate_user.present? && duplicate_similarity >= FaceMatching::TAU
+        resource.errors.add(:base,
         "Registrasi ditolak! Wajah Anda sudah terdaftar di dalam sistem atas nama '#{duplicate_user.name}'. Satu wajah hanya dapat mendaftarkan satu akun.")
       clean_up_passwords resource
       set_minimum_password_length
@@ -50,10 +47,12 @@ class Users::RegistrationsController < Devise::RegistrationsController
     user_key     = VectorRotationCipher.generate_user_key
     tier2_vector = VectorRotationCipher.tier2_transform(global_vector, user_key)
 
-    resource.tier1_hash     = hash
+    # resource.tier1_hash     = hash
+    resource.sketch         = VectorRotationCipher.sketch(global_vector)
     resource.tier2_vector   = tier2_vector.to_json
     resource.tier2_user_key = user_key.to_json   # terenkripsi otomatis saat save
 
+    resource.sketch = VectorRotationCipher.sketch(global_vector)
     resource.save
     yield resource if block_given?
 

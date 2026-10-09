@@ -1,0 +1,61 @@
+
+ -- versi cari semua --
+14:52:27 css.1  | Done in 419ms
+14:52:35 web.1  | Started POST "/attendances/check_in" for 114.122.43.218 at 2026-10-03 14:52:35 +0700
+14:52:35 web.1  | Cannot render console from 114.122.43.218! Allowed networks: 127.0.0.0/127.255.255.255, ::1, ::ffff:127.0.0.0/::ffff:127.255.255.255
+14:52:35 css.1  | Done in 4ms
+14:52:35 css.1  | Done in 5ms
+14:52:35 css.1  | Done in 6ms
+14:52:35 css.1  | Done in 3ms
+14:52:35 web.1  | Processing by AttendancesController#create as */*
+14:52:35 web.1  |   Parameters: {"image" => "[FILTERED]", "latitude" => 2.3880422, "longitude" => 99.1506164, "attendance" => {"latitude" => 2.3880422, "longitude" => 99.1506164}}
+14:52:35 css.1  | Done in 4ms
+14:52:36 css.1  | Done in 293µs
+14:52:40 web.1  | Completed 401 Unauthorized in 4976ms (Views: 0.4ms | ActiveRecord: 1539.8ms (42 queries, 0 cached) | GC: 251.7ms)
+14:52:40 web.1  | 
+14:52:40 web.1  | 
+14:52:40 css.1  | Done in 4ms
+14:52:50 web.1  | Started POST "/attendances/check_in" for 114.122.43.218 at 2026-10-03 14:52:50 +0700
+14:52:50 web.1  | Cannot render console from 114.122.43.218! Allowed networks: 127.0.0.0/127.255.255.255, ::1, ::ffff:127.0.0.0/::ffff:127.255.255.255
+14:52:50 web.1  | Processing by AttendancesController#create as */*
+14:52:50 web.1  |   Parameters: {"image" => "[FILTERED]", "latitude" => 2.3880422, "longitude" => 99.1506164, "attendance" => {"latitude" => 2.3880422, "longitude" => 99.1506164}}
+14:52:50 css.1  | Done in 6ms
+14:52:50 css.1  | Done in 3ms
+14:52:51 css.1  | Done in 331µs
+14:52:54 web.1  | Completed 401 Unauthorized in 4029ms (Views: 0.3ms | ActiveRecord: 764.6ms (42 queries, 0 cached) | GC: 153.5ms)
+14:52:54 web.1  | 
+
+-- versi terbaru --
+14:50:56 css.1  | Done in 374ms
+14:51:00 web.1  | Started POST "/attendances/check_in" for 114.122.43.218 at 2026-10-03 14:51:00 +0700
+14:51:00 web.1  | Cannot render console from 114.122.43.218! Allowed networks: 127.0.0.0/127.255.255.255, ::1, ::ffff:127.0.0.0/::ffff:127.255.255.255
+14:51:00 css.1  | Done in 4ms
+14:51:00 css.1  | Done in 5ms
+14:51:00 web.1  | Processing by AttendancesController#create as */*
+14:51:00 web.1  |   Parameters: {"image" => "[FILTERED]", "latitude" => 2.3880422, "longitude" => 99.1506164, "attendance" => {"latitude" => 2.3880422, "longitude" => 99.1506164}}
+14:51:00 css.1  | Done in 4ms
+14:51:00 css.1  | Done in 297µs
+14:51:01 web.1  | Completed 401 Unauthorized in 681ms (Views: 0.5ms | ActiveRecord: 344.9ms (4 queries, 0 cached) | GC: 0.0ms)
+14:51:01 web.1  | 
+14:51:01 web.1  | 
+14:51:01 css.1  | Done in 5ms
+14:51:10 web.1  | Started POST "/attendances/check_in" for 114.122.43.218 at 2026-10-03 14:51:10 +0700
+14:51:10 web.1  | Cannot render console from 114.122.43.218! Allowed networks: 127.0.0.0/127.255.255.255, ::1, ::ffff:127.0.0.0/::ffff:127.255.255.255
+14:51:10 web.1  | Processing by AttendancesController#create as */*
+14:51:10 web.1  |   Parameters: {"image" => "[FILTERED]", "latitude" => 2.3880422, "longitude" => 99.1506164, "attendance" => {"latitude" => 2.3880422, "longitude" => 99.1506164}}
+14:51:11 css.1  | Done in 5ms
+14:51:11 css.1  | Done in 5ms
+14:51:11 css.1  | Done in 321µs
+14:51:11 web.1  | Completed 401 Unauthorized in 460ms (Views: 0.2ms | ActiveRecord: 127.2ms (4 queries, 0 cached) | GC: 0.0ms)
+14:51:11 web.1  | 
+14:51:11 web.1  | 
+14:51:11 css.1  | Done in 6ms
+14:51:30 web.1  | Started POST "/attendances/check_in" for 114.122.43.218 at 2026-10-03 14:51:30 +0700
+14:51:30 web.1  | Cannot render console from 114.122.43.218! Allowed networks: 127.0.0.0/127.255.255.255, ::1, ::ffff:127.0.0.0/::ffff:127.255.255.255
+14:51:30 web.1  | Processing by AttendancesController#create as */*
+14:51:30 web.1  |   Parameters: {"image" => "[FILTERED]", "latitude" => 2.3880422, "longitude" => 99.1506164, "attendance" => {"latitude" => 2.3880422, "longitude" => 99.1506164}}
+14:51:30 css.1  | Done in 7ms
+14:51:30 css.1  | Done in 4ms
+14:51:30 css.1  | Done in 567µs
+14:51:30 web.1  | Completed 401 Unauthorized in 512ms (Views: 0.2ms | ActiveRecord: 173.6ms (4 queries, 0 cached) | GC: 0.0ms)
+14:51:30 web.1  | 

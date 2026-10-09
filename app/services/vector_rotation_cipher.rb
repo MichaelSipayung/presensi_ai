@@ -5,10 +5,74 @@ require "set"
 class VectorRotationCipher
   DIM = 128
   HASH_BITS = 16
+  SKETCH_BITS = 64
+  
+  def self.search_full_scan(event_type:, global_vector:, tau:)
+    t0 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+    users = User.where.not(tier2_vector: nil).select(:id, :name, :tier2_vector, :tier2_user_key)
+    best_user, best_similarity = find_best_match(users, global_vector)
+    ms = ((Process.clock_gettime(Process::CLOCK_MONOTONIC) - t0) * 1000).round(4)
+    PerformanceLog.create!(
+      event_type: event_type, total_time_ms: ms, probe_time_ms: 0.0, fallback_time_ms: ms,
+      used_fallback: true, fallback_candidate_count: User.count,
+      best_similarity: best_similarity.round(6),
+      match_found: best_user.present? && best_similarity >= tau,
+      matched_user_id: best_user&.id
+    )
+    [ best_user, best_similarity ]
+  end
 
+  def self.sketch_offsets
+    @sketch_offsets ||= begin
+      path = ENV["SKETCH_OFFSETS_PATH"] or raise "[ERROR] SKETCH_OFFSETS_PATH belum diset!"
+      offs = JSON.parse(File.read(path)).map(&:to_f)
+      raise "[ERROR] sketch_offsets harus #{SKETCH_BITS} angka, ada #{offs.length}" unless offs.length == SKETCH_BITS
+      offs
+    end
+  end
+
+  def self.sketch(global_vector)
+    offs = sketch_offsets
+    (0...SKETCH_BITS).map { |j| global_vector[j] >= offs[j] ? "1" : "0" }.join
+  end
+
+  # Top-K jarak Hamming terkecil, dihitung di PostgreSQL. .to_a wajib: find_each mengabaikan ORDER BY.
+  def self.sketch_candidates(sketch, limit:)
+    order_sql = ActiveRecord::Base.sanitize_sql_array(
+      [ "bit_count(sketch # CAST(? AS bit(#{SKETCH_BITS})))", sketch ]
+    )
+    User.where.not(sketch: nil)
+        .select(:id, :name, :tier2_vector, :tier2_user_key)
+        .order(Arel.sql(order_sql))
+        .limit(limit)
+        .to_a
+  end
+
+  def self.search_sketch(event_type:, global_vector:, k:, tau:)
+    clock = -> { Process.clock_gettime(Process::CLOCK_MONOTONIC) }
+    t0 = clock.call
+    sk = sketch(global_vector)
+    candidates = sketch_candidates(sk, limit: k)
+    t1 = clock.call
+    best_user, best_similarity = find_best_match(candidates, global_vector)
+    t2 = clock.call
+
+    PerformanceLog.create!(
+      event_type: event_type, tier1_hash: sk,
+      probe_candidate_count: candidates.size,
+      probe_time_ms: ((t1 - t0) * 1000).round(4),      # SQL Hamming Top-K
+      fallback_time_ms: ((t2 - t1) * 1000).round(4),   # verifikasi Tier 2 (parse + dekripsi + cosine)
+      total_time_ms: ((t2 - t0) * 1000).round(4),
+      used_fallback: false, fallback_candidate_count: 0,
+      best_similarity: best_similarity.round(6),
+      match_found: best_user.present? && best_similarity >= tau,
+      matched_user_id: best_user&.id
+    )
+    [ best_user, best_similarity ]
+  end
   # ============================================================
   # R_global -- kunci dense, SHARED, dibaca dari file
-  # ============================================================
+  # ===========================================================
   def self.rotation_key
     @rotation_key ||= begin
       path = ENV["VECTOR_ROTATION_KEY_PATH"] or raise "[ERROR] VECTOR_ROTATION_KEY_PATH belum diset!"
@@ -109,42 +173,42 @@ class VectorRotationCipher
   # event_type: "registration_dedup" atau "attendance"
   # Mengembalikan [best_user, best_similarity] (sama seperti find_best_match biasa)
   def self.search_with_logging(event_type:, global_vector:, hash:, probe_hashes:, threshold_distance:)
-    # t_start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+    t_start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
 
     candidates = User.where(tier1_hash: probe_hashes)
-    # probe_candidate_count = candidates.count
+    probe_candidate_count = candidates.count
     best_user, best_similarity = find_best_match(candidates, global_vector)
 
-    # t_after_probe = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-    # probe_time_ms = (t_after_probe - t_start) * 1000.0
+    t_after_probe = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+    probe_time_ms = (t_after_probe - t_start) * 1000.0
 
     used_fallback = best_user.nil? || (1.0 - best_similarity) > threshold_distance
-    # fallback_time_ms = 0.0
-    # fallback_candidate_count = 0
+    fallback_time_ms = 0.0
+    fallback_candidate_count = 0
 
     if used_fallback
-      # fallback_candidate_count = User.count
+      fallback_candidate_count = User.count
       best_user, best_similarity = find_best_match(User.all, global_vector)
-      # t_after_fallback = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-      # fallback_time_ms = (t_after_fallback - t_after_probe) * 1000.0
+      t_after_fallback = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      fallback_time_ms = (t_after_fallback - t_after_probe) * 1000.0
     end
 
-    # total_time_ms = probe_time_ms + fallback_time_ms
-    # match_found = best_user.present? && (1.0 - best_similarity) <= threshold_distance
+    total_time_ms = probe_time_ms + fallback_time_ms
+    match_found = best_user.present? && (1.0 - best_similarity) <= threshold_distance
 
-    # PerformanceLog.create!(
-    #   event_type: event_type,
-    #   tier1_hash: hash,
-    #   probe_candidate_count: probe_candidate_count,
-    #   used_fallback: used_fallback,
-    #   fallback_candidate_count: fallback_candidate_count,
-    #   probe_time_ms: probe_time_ms.round(4),
-    #   fallback_time_ms: fallback_time_ms.round(4),
-    #   total_time_ms: total_time_ms.round(4),
-    #   best_similarity: best_similarity.round(6),
-    #   match_found: match_found,
-    #   matched_user_id: match_found ? best_user.id : nil
-    # )
+    PerformanceLog.create!(
+      event_type: event_type,
+      tier1_hash: hash,
+      probe_candidate_count: probe_candidate_count,
+      used_fallback: used_fallback,
+      fallback_candidate_count: fallback_candidate_count,
+      probe_time_ms: probe_time_ms.round(4),
+      fallback_time_ms: fallback_time_ms.round(4),
+      total_time_ms: total_time_ms.round(4),
+      best_similarity: best_similarity.round(6),
+      match_found: match_found,
+      matched_user_id: best_user&.id
+    )
 
     [ best_user, best_similarity ]
   end
@@ -166,9 +230,9 @@ class VectorRotationCipher
     fallback_candidate_count = 0
 
     if used_fallback
-      # 🚀 INOVASI HEURISTIK: ADAPTIVE NEIGHBOR PROBING (Pengganti Fallback Linear)
-      # Alih-alih mengecek 40.000 data, AI/Heuristik menebak 50 hash terdekat berdasar Hamming Distance!
-      heuristic_candidates = adaptive_neighbor_search(hash, limit: 50)
+      # ADAPTIVE NEIGHBOR PROBING (Pengganti Fallback Linear)
+      # 100 hash terdekat berdasar Hamming Distance!
+      heuristic_candidates = adaptive_neighbor_search(hash, limit: 500)
       fallback_candidate_count = heuristic_candidates.count
       best_user, best_similarity = find_best_match(heuristic_candidates, global_vector)
       t_after_fallback = Process.clock_gettime(Process::CLOCK_MONOTONIC)
@@ -178,19 +242,19 @@ class VectorRotationCipher
     total_time_ms = probe_time_ms + fallback_time_ms
     match_found = best_user.present? && (1.0 - best_similarity) <= threshold_distance
 
-    # PerformanceLog.create!(
-    #   event_type: event_type,
-    #   tier1_hash: hash,
-    #   probe_candidate_count: probe_candidate_count,
-    #   used_fallback: used_fallback, # Sekarang ini merepresentasikan "Heuristik Probing"
-    #   fallback_candidate_count: fallback_candidate_count,
-    #   probe_time_ms: probe_time_ms.round(4),
-    #   fallback_time_ms: fallback_time_ms.round(4),
-    #   total_time_ms: total_time_ms.round(4),
-    #   best_similarity: best_similarity.round(6),
-    #   match_found: match_found,
-    #   matched_user_id: match_found ? best_user.id : nil
-    # )
+    PerformanceLog.create!(
+      event_type: event_type,
+      tier1_hash: hash,
+      probe_candidate_count: probe_candidate_count,
+      used_fallback: used_fallback,
+      fallback_candidate_count: fallback_candidate_count,
+      probe_time_ms: probe_time_ms.round(4),
+      fallback_time_ms: fallback_time_ms.round(4),
+      total_time_ms: total_time_ms.round(4),
+      best_similarity: best_similarity.round(6),
+      match_found: match_found,
+      matched_user_id: best_user&.id
+    )
 
     [ best_user, best_similarity ]
   end

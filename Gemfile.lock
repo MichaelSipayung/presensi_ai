@@ -419,6 +419,7 @@ DEPENDENCIES
   importmap-rails
   jbuilder
   kamal
+  mini_magick
   neighbor (~> 1.2)
   pg (~> 1.1)
   propshaft
