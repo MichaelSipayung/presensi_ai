@@ -38,7 +38,7 @@ namespace :report do
     end
     nc    = bits / 16
     g_c64 = g_rot.map { |g| chunks.(g, offs, bits) }
-    g_c16 = g_rot.map { |g| chunks.(g, zeros, 16)[0] }   # sistem lama: 16 bit, ambang 0
+    g_c16 = g_rot.map { |g| chunks.(g, zeros, 16)[0] }   # desain awal: 16 bit, ambang 0
     g_emb = gal.map { |g| g["embedding"] }
     dot = lambda do |a, b|
       s = 0.0
@@ -56,11 +56,7 @@ namespace :report do
     head  = %w[dataset identity light_angle brightness sharpness n_gallery genuine imp_max rank16 rank64]
     head += sizes.map { |s| "imp_max_n#{s}" } + sizes.map { |s| "rank64_n#{s}" }
     ks.each { |k| head += [ "k#{k}_ok", "k#{k}_sim" ] }
-    head += %w[fz_k fz_tau fz_ok fz_sim]
-
-    kcap = [ 2500, n ].min
-    fz_k_sum = 0
-    fz_t_sum = 0.0
+    kcap = [ ks.max, n ].min
 
     CSV.open(Rails.root.join("tmp", "report_queries.csv"), "w") do |csv|
       csv << head
@@ -119,22 +115,14 @@ namespace :report do
           pm_i << best_i
         end
 
-        fz = FuzzyThresholdEngine.calculate(q["brightness"], q["sharpness"])
-        kf = [ fz[:k_limit], kcap ].min
-        fz_k_sum += kf
-        fz_t_sum += fz[:threshold]
-
         row  = [ q["dataset"], q["identity"], q["light_angle"], q["brightness"], q["sharpness"], n,
                  genuine.round(6), imp_all.round(6), rank16, rank64 ]
         row += imp_n.map { |x| x.round(6) } + rank_n
         ks.each { |k| row += [ (pm_i[k - 1] == t ? 1 : 0), pm_s[k - 1].round(6) ] }
-        row += [ kf, fz[:threshold], (pm_i[kf - 1] == t ? 1 : 0), pm_s[kf - 1].round(6) ]
         csv << row
         puts "  [#{qi + 1}/#{qs.size}]" if ((qi + 1) % 300).zero?
       end
     end
-    puts format("[CEK FUZZY] rata-rata K=%.0f  rata-rata tau=%.3f  (jika tau selalu ~0.607, domain defuzzifikasi belum diperbaiki)",
-                fz_k_sum.to_f / qs.size, fz_t_sum / qs.size)
 
     cached = Set.new(File.foreach(CalibrationHelper.cache_path).map { |l| JSON.parse(l)["path"] })
     plan   = CalibrationHelper.plan

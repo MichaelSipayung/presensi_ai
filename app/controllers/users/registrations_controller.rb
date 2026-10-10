@@ -27,7 +27,7 @@ class Users::RegistrationsController < Devise::RegistrationsController
     camera_vector = VectorRotationCipher.l2_normalize(camera_vector)
     # ---- Rotasi global (sekali) + hash Tier 1 + daftar varian probe ----
     global_vector = VectorRotationCipher.apply_global_rotation(camera_vector)
-    hash, probe_hashes = VectorRotationCipher.tier1_hash_and_probes(global_vector)
+    # hash, probe_hashes = VectorRotationCipher.tier1_hash_and_probes(global_vector)
 
     # ---- CEK DUPLIKASI: multi-probe + fallback otomatis, sekaligus tercatat di PerformanceLog ----
     duplicate_user, duplicate_similarity = VectorRotationCipher.search_full_scan(
