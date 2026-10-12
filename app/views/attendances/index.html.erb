@@ -1,122 +1,195 @@
-<div class="max-w-2xl mx-auto mt-10 bg-white p-8 rounded-lg shadow-md">
-  <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">Presensi Wajah AI</h2>
+<%# Halaman presensi wajah.
+    Alur: kamera + GPS siap -> tombol aktif -> satu frame ditangkap -> dikirim via fetch (JSON)
+    ke AttendancesController#create -> hasil ditampilkan, tabel riwayat dimuat ulang jika berhasil.
+    Citra tidak disimpan di server; hanya dipakai untuk mengekstrak embedding. %>
 
-  <!-- Container Video -->
-  <div class="relative bg-gray-200 rounded-lg overflow-hidden flex justify-center items-center h-64 mb-6">
-    <video id="webcam" autoplay playsinline class="w-full h-full object-cover"></video>
-    <canvas id="canvas" class="hidden"></canvas>
-  </div>
+<%# w-full: <main> di layout memakai flex, tanpa ini kartu menyusut ke kiri %>
+<div class="w-full pb-10">
+  <div class="mx-auto max-w-2xl space-y-8">
 
-  <!-- Status Lokasi -->
-  <p id="location-status" class="text-sm text-gray-600 text-center mb-4">Mengambil lokasi GPS...</p>
+    <%# ===== Kartu presensi ===== %>
+    <div class="overflow-hidden rounded-3xl bg-white p-6 shadow-xl shadow-indigo-900/5 ring-1 ring-slate-200/70 sm:p-8">
+      <div class="text-center">
+        <h1 class="text-2xl font-bold text-slate-900">Presensi Wajah AI</h1>
+        <p class="mt-1 text-sm text-slate-500">Hadapkan wajah ke kamera, lalu tekan tombol presensi.</p>
+      </div>
 
-  <!-- Tombol Absen -->
-  <button id="btn-absen" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded transition duration-200 opacity-50 cursor-not-allowed" disabled>
-    Lakukan Presensi
-  </button>
+      <%# Pratinjau kamera. Pratinjau dicerminkan; frame yang dikirim tidak dicerminkan. %>
+      <div class="relative mt-6 aspect-[4/3] w-full overflow-hidden rounded-2xl bg-slate-900 ring-1 ring-slate-200">
+        <video id="webcam" autoplay playsinline muted class="h-full w-full -scale-x-100 object-cover"></video>
+        <canvas id="canvas" class="hidden"></canvas>
 
-  <p id="alert-message" class="text-center mt-4 font-semibold hidden"></p>
+        <%# Panduan posisi wajah %>
+        <div class="pointer-events-none absolute inset-0 flex items-center justify-center">
+          <div class="h-[78%] w-[46%] rounded-[50%] border-2 border-dashed border-white/60"></div>
+        </div>
 
-  <!-- Tabel Histori Absen -->
-  <h3 class="text-xl font-bold mt-10 mb-4">Riwayat Anda</h3>
-  <table class="min-w-full bg-white border">
-    <thead>
-      <tr class="bg-gray-100">
-        <th class="py-2 px-4 border">Waktu</th>
-        <th class="py-2 px-4 border">Status</th>
-        <th class="py-2 px-4 border">Koordinat</th>
-      </tr>
-    </thead>
-    <tbody>
-      <% @attendances.each do |att| %>
-        <tr class="text-center">
-          <td class="py-2 px-4 border"><%= att.created_at.strftime("%d-%m-%Y %H:%M") %></td>
-          <td class="py-2 px-4 border"><span class="bg-green-100 text-green-800 px-2 py-1 rounded text-sm"><%= att.status %></span></td>
-          <td class="py-2 px-4 border text-sm"><%= att.latitude %>, <%= att.longitude %></td>
-        </tr>
+        <%# Panel status kamera (disembunyikan saat video aktif) %>
+        <div id="camera-status" class="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-slate-900/90 px-6 text-center text-sm text-slate-200">
+          <svg id="camera-spinner" class="h-6 w-6 animate-spin text-indigo-300" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" class="opacity-25"/>
+            <path d="M22 12a10 10 0 0 0-10-10" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+          </svg>
+          <span id="camera-status-text">Menyalakan kamera…</span>
+        </div>
+      </div>
+
+      <%# Status lokasi %>
+      <div id="location-pill" class="mx-auto mt-4 flex w-fit items-center gap-2 rounded-full bg-slate-100 px-4 py-1.5 text-sm text-slate-600">
+        <span id="location-dot" class="h-2 w-2 animate-pulse rounded-full bg-slate-400"></span>
+        <span id="location-status">Mengambil lokasi GPS…</span>
+      </div>
+
+      <button id="btn-absen" disabled
+              class="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 font-semibold text-white shadow-lg shadow-indigo-600/25 transition hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-500/30 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none">
+        <svg id="btn-spinner" class="hidden h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" class="opacity-25"/>
+          <path d="M22 12a10 10 0 0 0-10-10" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+        </svg>
+        <span id="btn-label">Lakukan presensi</span>
+      </button>
+
+      <%# Hasil verifikasi: kelas warna diatur oleh skrip %>
+      <p id="alert-message" role="status" class="mt-4 hidden rounded-xl px-4 py-3 text-center text-sm font-medium"></p>
+    </div>
+
+    <%# ===== Riwayat presensi terbaru ===== %>
+    <div class="overflow-hidden rounded-3xl bg-white p-6 shadow-xl shadow-indigo-900/5 ring-1 ring-slate-200/70 sm:p-8">
+      <h2 class="text-lg font-semibold text-slate-900">Presensi terbaru</h2>
+
+      <% if @attendances.empty? %>
+        <p class="mt-4 rounded-xl bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">Belum ada presensi tercatat.</p>
+      <% else %>
+        <div class="mt-4 overflow-x-auto">
+          <table class="min-w-full text-sm">
+            <thead>
+              <tr class="border-b border-slate-100 text-left text-xs uppercase tracking-wider text-slate-400">
+                <th class="py-2 pr-4 font-medium">Waktu</th>
+                <th class="py-2 pr-4 font-medium">Status</th>
+                <th class="py-2 font-medium">Koordinat</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              <% @attendances.each do |att| %>
+                <tr>
+                  <td class="whitespace-nowrap py-3 pr-4 text-slate-700"><%= att.created_at.strftime("%d-%m-%Y %H:%M") %></td>
+                  <td class="py-3 pr-4">
+                    <span class="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700 ring-1 ring-emerald-600/15"><%= att.status %></span>
+                  </td>
+                  <td class="whitespace-nowrap py-3 text-slate-500"><%= att.latitude %>, <%= att.longitude %></td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
       <% end %>
-    </tbody>
-  </table>
+    </div>
+  </div>
 </div>
 
 <script>
   document.addEventListener("DOMContentLoaded", () => {
-    const video = document.getElementById('webcam');
-    const canvas = document.getElementById('canvas');
-    const btnAbsen = document.getElementById('btn-absen');
-    const locationStatus = document.getElementById('location-status');
-    const alertMessage = document.getElementById('alert-message');
-    
-    let currentLat = null;
-    let currentLng = null;
+    const $ = (id) => document.getElementById(id);
+    const video = $("webcam"), canvas = $("canvas");
+    const btnAbsen = $("btn-absen"), btnLabel = $("btn-label"), btnSpinner = $("btn-spinner");
+    const cameraStatus = $("camera-status"), cameraStatusText = $("camera-status-text"), cameraSpinner = $("camera-spinner");
+    const locationPill = $("location-pill"), locationDot = $("location-dot"), locationStatus = $("location-status");
+    const alertMessage = $("alert-message");
 
-    // 1. Akses Webcam
-    navigator.mediaDevices.getUserMedia({ video: true })
-      .then(stream => { video.srcObject = stream; })
-      .catch(err => {
-        locationStatus.innerText = "Error: Webcam tidak diizinkan!";
-        locationStatus.classList.add("text-red-500");
+    let currentLat = null, currentLng = null;
+    let cameraReady = false, locationReady = false;
+
+    // Tombol aktif hanya jika kamera DAN GPS sudah siap.
+    const refreshButton = () => { btnAbsen.disabled = !(cameraReady && locationReady); };
+
+    // Menampilkan hasil verifikasi; tone: "success" | "error".
+    const showResult = (message, tone) => {
+      alertMessage.textContent = message;
+      alertMessage.className = "mt-4 rounded-xl px-4 py-3 text-center text-sm font-medium " +
+        (tone === "success" ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700");
+    };
+
+    const setBusy = (busy, label) => {
+      btnSpinner.classList.toggle("hidden", !busy);
+      btnLabel.textContent = label;
+    };
+
+    // 1. Akses webcam.
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false })
+      .then((stream) => {
+        video.srcObject = stream;
+        video.addEventListener("playing", () => {
+          cameraStatus.classList.add("hidden");
+          cameraReady = true;
+          refreshButton();
+        }, { once: true });
+      })
+      .catch(() => {
+        cameraSpinner.classList.add("hidden");
+        cameraStatusText.textContent = "Webcam tidak diizinkan. Izinkan akses kamera di pengaturan browser.";
       });
 
-    // 2. Ambil Lokasi GPS
+    // 2. Ambil lokasi GPS.
+    const locationFailed = (message) => {
+      locationStatus.textContent = message;
+      locationPill.className = "mx-auto mt-4 flex w-fit items-center gap-2 rounded-full bg-rose-50 px-4 py-1.5 text-sm text-rose-700";
+      locationDot.className = "h-2 w-2 rounded-full bg-rose-500";
+    };
+
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           currentLat = position.coords.latitude;
           currentLng = position.coords.longitude;
-          locationStatus.innerText = `Lokasi ditemukan: ${currentLat.toFixed(4)}, ${currentLng.toFixed(4)}`;
-          locationStatus.classList.replace("text-gray-600", "text-green-600");
-          
-          // Aktifkan tombol jika GPS dapat
-          btnAbsen.disabled = false;
-          btnAbsen.classList.remove("opacity-50", "cursor-not-allowed");
+          locationStatus.textContent = `Lokasi ditemukan: ${currentLat.toFixed(4)}, ${currentLng.toFixed(4)}`;
+          locationPill.className = "mx-auto mt-4 flex w-fit items-center gap-2 rounded-full bg-emerald-50 px-4 py-1.5 text-sm text-emerald-700";
+          locationDot.className = "h-2 w-2 rounded-full bg-emerald-500";
+          locationReady = true;
+          refreshButton();
         },
-        (error) => {
-          locationStatus.innerText = "Gagal mengambil lokasi GPS. Izinkan akses lokasi.";
-          locationStatus.classList.replace("text-gray-600", "text-red-500");
-        }
+        () => locationFailed("Gagal mengambil lokasi GPS. Izinkan akses lokasi.")
       );
+    } else {
+      locationFailed("Browser tidak mendukung GPS.");
     }
 
-    // 3. Proses Absen (Capture & AJAX to Ruby Controller)
-    btnAbsen.addEventListener('click', () => {
-      btnAbsen.innerText = "Memproses AI...";
+    // 3. Presensi: tangkap frame lalu kirim ke Rails (JSON).
+    btnAbsen.addEventListener("click", () => {
       btnAbsen.disabled = true;
+      setBusy(true, "Memproses wajah…");
+      alertMessage.classList.add("hidden");
 
-      // Ambil foto dari video
-      const context = canvas.getContext('2d');
+      // Frame digambar apa adanya (tidak dicerminkan).
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
-      context.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const base64Image = canvas.toDataURL('image/jpeg'); // Format JPEG
+      canvas.getContext("2d").drawImage(video, 0, 0, canvas.width, canvas.height);
+      const base64Image = canvas.toDataURL("image/jpeg");
 
-      // Kirim ke Rails
-      fetch('/attendances/check_in', {
-        method: 'POST',
+      fetch("/attendances/check_in", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+          "Content-Type": "application/json",
+          "X-CSRF-Token": document.querySelector('meta[name="csrf-token"]').content
         },
-        body: JSON.stringify({
-          image: base64Image,
-          latitude: currentLat,
-          longitude: currentLng
-        })
+        body: JSON.stringify({ image: base64Image, latitude: currentLat, longitude: currentLng })
       })
-      .then(response => response.json())
-      .then(data => {
-        alertMessage.classList.remove("hidden");
-        if(data.success) {
-          alertMessage.innerText = data.message;
-          alertMessage.classList.add("text-green-600");
-          setTimeout(() => location.reload(), 2000); // Refresh tabel
-        } else {
-          alertMessage.innerText = data.message;
-          alertMessage.classList.add("text-red-600");
-          btnAbsen.innerText = "Coba Lagi";
-          btnAbsen.disabled = false;
-        }
-      });
+        .then((response) => response.json())
+        .then((data) => {
+          showResult(data.message, data.success ? "success" : "error");
+          if (data.success) {
+            setBusy(false, "Presensi berhasil");
+            setTimeout(() => location.reload(), 2000); // muat ulang tabel riwayat
+          } else {
+            setBusy(false, "Coba lagi");
+            refreshButton();
+          }
+        })
+        .catch(() => {
+          // Jaringan terputus atau respons bukan JSON.
+          showResult("Terjadi gangguan koneksi. Silakan coba lagi.", "error");
+          setBusy(false, "Coba lagi");
+          refreshButton();
+        });
     });
   });
 </script>
