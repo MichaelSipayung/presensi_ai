@@ -1,61 +1,72 @@
+# frozen_string_literal: true
+
+# Users::RegistrationsController
+# ==============================
+# Memperluas Devise::RegistrationsController: pendaftaran akun sekaligus
+# enrollment wajah (template biometrik terbatalkan dua tingkat).
+#
+# Alur #create:
+#   1. Foto wajah wajib ada, lalu diekstrak menjadi embedding SFace 128-d.
+#   2. Embedding dinormalisasi L2 dan dirotasi global (Tier 1): g = R·x̂.
+#   3. Deteksi akun ganda: pemindaian PENUH (bukan sketch) agar tidak ada wajah
+#      yang sama lolos mendaftar dua kali.
+#   4. Jika lolos: buat kunci Tier 2 baru (permutasi bertanda) khusus akun ini,
+#      simpan template w = P·g, kunci (terenkripsi), dan sketch Hamming 64 bit.
+#   5. Foto mentah tidak pernah disimpan; hanya `face_image` yang dikecualikan
+#      dari atribut User.
 class Users::RegistrationsController < Devise::RegistrationsController
   before_action :configure_sign_up_params, only: [ :create ]
 
-  # THRESHOLD_DISTANCE = 0.35  # cosine distance; similarity >= 0.65 dianggap wajah sama
-  THRESHOLD_DISTANCE = 1.0 - FaceMatching::TAU
+  # POST /users
+  #
+  # Params: user[name], user[email], user[password], user[face_image] (+ field Devise lain).
+  # Gagal -> render :new dengan status 422 (foto kosong, wajah tidak valid,
+  # wajah sudah terdaftar, atau validasi model gagal).
   def create
     build_resource(sign_up_params.except(:face_image))
 
     unless params[:user][:face_image].present?
-      resource.errors.add(:base, "Foto wajah wajib diambil untuk pendaftaran sistem presensi.")
-      clean_up_passwords resource
-      set_minimum_password_length
-      return render :new, status: :unprocessable_entity
+      return reject_registration("Foto wajah wajib diambil untuk pendaftaran sistem presensi.")
     end
 
+    # 1. Deteksi wajah (YuNet) + embedding SFace lewat mesin C++.
     result = FaceRecognitionService.extract_face(params[:user][:face_image])
-
     unless result[:success]
-      resource.errors.add(:base, "Validasi Wajah Gagal: #{result[:error]}")
-      clean_up_passwords resource
-      set_minimum_password_length
-      return render :new, status: :unprocessable_entity
+      return reject_registration("Validasi Wajah Gagal: #{result[:error]}")
     end
 
-    camera_vector = FaceRecognitionService.hex_to_float_array(result[:embedding])
-    # Normalisasi vektor sebelum masuk ke sistem cipher
-    camera_vector = VectorRotationCipher.l2_normalize(camera_vector)
-    # ---- Rotasi global (sekali) + hash Tier 1 + daftar varian probe ----
+    # 2. Normalisasi L2 sebelum masuk ke cipher, lalu rotasi global Tier 1 (sekali saja).
+    camera_vector = VectorRotationCipher.l2_normalize(
+      FaceRecognitionService.hex_to_float_array(result[:embedding])
+    )
     global_vector = VectorRotationCipher.apply_global_rotation(camera_vector)
-    # hash, probe_hashes = VectorRotationCipher.tier1_hash_and_probes(global_vector)
 
-    # ---- CEK DUPLIKASI: multi-probe + fallback otomatis, sekaligus tercatat di PerformanceLog ----
+    # 3. Cek duplikasi dengan full scan; hasil tercatat di PerformanceLog.
+    #    Ambang dedup sama dengan ambang presensi (FaceMatching::TAU).
     duplicate_user, duplicate_similarity = VectorRotationCipher.search_full_scan(
       event_type: "registration_dedup_fullscan",
       global_vector: global_vector, tau: FaceMatching::TAU
     )
 
     if duplicate_user.present? && duplicate_similarity >= FaceMatching::TAU
-        resource.errors.add(:base,
-        "Registrasi ditolak! Wajah Anda sudah terdaftar di dalam sistem atas nama '#{duplicate_user.name}'. Satu wajah hanya dapat mendaftarkan satu akun.")
-      clean_up_passwords resource
-      set_minimum_password_length
-      return render :new, status: :unprocessable_entity
+      return reject_registration(
+        "Registrasi ditolak! Wajah Anda sudah terdaftar di dalam sistem atas nama " \
+        "'#{duplicate_user.name}'. Satu wajah hanya dapat mendaftarkan satu akun."
+      )
     end
 
-    # ---- Lolos cek duplikasi: generate kunci Tier 2 BARU untuk akun ini ----
+    # 4. Lolos: kunci Tier 2 BARU untuk akun ini (revocable: ganti kunci = template baru).
     user_key     = VectorRotationCipher.generate_user_key
     tier2_vector = VectorRotationCipher.tier2_transform(global_vector, user_key)
 
-    # resource.tier1_hash     = hash
-    resource.sketch         = VectorRotationCipher.sketch(global_vector)
+    resource.sketch         = VectorRotationCipher.sketch(global_vector) # indeks pencarian Hamming
     resource.tier2_vector   = tier2_vector.to_json
-    resource.tier2_user_key = user_key.to_json   # terenkripsi otomatis saat save
+    resource.tier2_user_key = user_key.to_json # dienkripsi otomatis (Active Record Encryption) saat save
 
-    resource.sketch = VectorRotationCipher.sketch(global_vector)
     resource.save
     yield resource if block_given?
 
+    # 5. Alur Devise standar setelah penyimpanan.
     if resource.persisted?
       if resource.active_for_authentication?
         set_flash_message! :notice, :signed_up
@@ -67,15 +78,29 @@ class Users::RegistrationsController < Devise::RegistrationsController
         respond_with resource, location: after_inactive_sign_up_path_for(resource)
       end
     else
-      clean_up_passwords resource
-      set_minimum_password_length
-      render :new, status: :unprocessable_entity
+      render_invalid_form
     end
   end
 
   protected
 
+  # Mengizinkan field tambahan pada form pendaftaran.
   def configure_sign_up_params
     devise_parameter_sanitizer.permit(:sign_up, keys: [ :name, :face_image ])
+  end
+
+  private
+
+  # Menolak pendaftaran: tambahkan pesan galat lalu tampilkan ulang form (422).
+  def reject_registration(message)
+    resource.errors.add(:base, message)
+    render_invalid_form
+  end
+
+  # Mengosongkan password pada form dan merender ulang halaman pendaftaran.
+  def render_invalid_form
+    clean_up_passwords resource
+    set_minimum_password_length
+    render :new, status: :unprocessable_entity
   end
 end

@@ -1,97 +1,172 @@
-<div class="max-w-xl mx-auto mt-10 bg-white p-8 rounded-lg shadow-md">
-  <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">Pendaftaran Karyawan Baru</h2>
+<%# Halaman pendaftaran karyawan + perekaman wajah (enrollment).
+    Alur: isi data akun -> kamera menangkap satu frame saat tombol ditekan ->
+    frame dikirim sebagai base64 di field tersembunyi `face_image` ->
+    controller mengekstrak embedding, lalu membuang citra (tidak disimpan). %>
 
-  <!-- Area Peringatan Error -->
-  <%= render "users/shared/error_messages", resource: resource %>
+<% field_class = "mt-1.5 block w-full rounded-xl border border-slate-200 bg-slate-50/60 px-4 py-2.5 " \
+                 "text-slate-900 placeholder-slate-400 shadow-sm transition " \
+                 "focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-indigo-500/15" %>
+<% label_class = "block text-sm font-medium text-slate-700" %>
 
-  <!-- Form Devise -->
-  <%= form_for(resource, as: resource_name, url: registration_path(resource_name), html: { id: "registration-form" }) do |f| %>
-    
-    <div class="mb-4">
-      <%= f.label :name, "Nama Lengkap", class: "block text-sm font-medium text-gray-700" %>
-      <%= f.text_field :name, autofocus: true, class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500", required: true %>
-    </div>
+<div class="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-sky-50 px-4 py-10">
+  <div class="mx-auto max-w-5xl overflow-hidden rounded-3xl bg-white shadow-xl shadow-indigo-900/5 ring-1 ring-slate-200/70 lg:grid lg:grid-cols-2">
 
-    <div class="mb-4">
-      <%= f.label :email, "Alamat Email", class: "block text-sm font-medium text-gray-700" %>
-      <%= f.email_field :email, autocomplete: "email", class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500", required: true %>
-    </div>
-
-    <div class="grid grid-cols-2 gap-4 mb-6">
+    <%# ===== Kolom kiri: kamera + jaminan privasi ===== %>
+    <section class="relative flex flex-col bg-slate-900 p-8 text-white">
       <div>
-        <%= f.label :password, class: "block text-sm font-medium text-gray-700" %>
-        <%= f.password_field :password, autocomplete: "new-password", class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500", required: true %>
+        <p class="text-xs font-semibold uppercase tracking-widest text-indigo-300">Langkah 2 dari 2</p>
+        <h2 class="mt-1 text-xl font-semibold">Perekaman wajah</h2>
+        <p class="mt-1 text-sm text-slate-300">Posisikan wajah di dalam bingkai oval dengan pencahayaan yang cukup.</p>
       </div>
-      <div>
-        <%= f.label :password_confirmation, "Konfirmasi Password", class: "block text-sm font-medium text-gray-700" %>
-        <%= f.password_field :password_confirmation, autocomplete: "new-password", class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500", required: true %>
-      </div>
-    </div>
 
-    <!-- Area Kamera Pendaftaran Wajah -->
-    <div class="mb-6">
-      <label class="block text-sm font-medium text-gray-700 mb-2">Perekaman Wajah (Biometrik)</label>
-      <div class="relative bg-gray-200 rounded-lg overflow-hidden flex justify-center items-center h-56">
-        <video id="webcam" autoplay playsinline class="w-full h-full object-cover"></video>
+      <div class="relative mt-6 aspect-[4/3] w-full overflow-hidden rounded-2xl bg-slate-800 ring-1 ring-white/10">
+        <%# scale-x-[-1]: pratinjau tampil seperti cermin; citra yang ditangkap tetap tidak terbalik %>
+        <video id="webcam" autoplay playsinline muted class="h-full w-full -scale-x-100 object-cover"></video>
         <canvas id="canvas" class="hidden"></canvas>
+
+        <%# Panduan posisi wajah %>
+        <div class="pointer-events-none absolute inset-0 flex items-center justify-center">
+          <div class="h-[78%] w-[52%] rounded-[50%] border-2 border-dashed border-white/60"></div>
+        </div>
+
+        <%# Status kamera (disembunyikan saat kamera aktif) %>
+        <div id="camera-status" class="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-slate-800/90 px-6 text-center text-sm text-slate-200">
+          <svg class="h-6 w-6 animate-spin text-indigo-300" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" class="opacity-25"/>
+            <path d="M22 12a10 10 0 0 0-10-10" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+          </svg>
+          <span id="camera-status-text">Menyalakan kamera…</span>
+        </div>
       </div>
-      <p class="text-xs text-gray-500 mt-2 text-center">Pastikan wajah terlihat jelas dan pencahayaan cukup. Wajah Anda akan langsung dienkripsi dan gambar asli akan dihapus.</p>
-    </div>
 
-    <!-- Input Tersembunyi untuk Gambar Base64 -->
-    <%= f.hidden_field :face_image, id: "face_image_input" %>
+      <ul class="mt-6 space-y-3 text-sm text-slate-300">
+        <li class="flex gap-3">
+          <span class="mt-0.5 flex h-5 w-5 flex-none items-center justify-center rounded-full bg-emerald-500/20 text-emerald-300">✓</span>
+          Foto tidak disimpan; dihapus segera setelah diubah menjadi vektor.
+        </li>
+        <li class="flex gap-3">
+          <span class="mt-0.5 flex h-5 w-5 flex-none items-center justify-center rounded-full bg-emerald-500/20 text-emerald-300">✓</span>
+          Template wajah diacak dengan kunci unik dan dapat dibatalkan.
+        </li>
+        <li class="flex gap-3">
+          <span class="mt-0.5 flex h-5 w-5 flex-none items-center justify-center rounded-full bg-emerald-500/20 text-emerald-300">✓</span>
+          Pemrosesan dilakukan di server Anda sendiri, tanpa layanan cloud pihak ketiga.
+        </li>
+      </ul>
+    </section>
 
-    <!-- Tombol Submit Kustom -->
-    <button type="button" id="btn-register" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded transition duration-200">
-      Rekam Wajah & Daftarkan Akun
-    </button>
-  <% end %>
+    <%# ===== Kolom kanan: formulir akun ===== %>
+    <section class="p-8 sm:p-10">
+      <p class="text-xs font-semibold uppercase tracking-widest text-indigo-600">Langkah 1 dari 2</p>
+      <h1 class="mt-1 text-2xl font-bold text-slate-900">Pendaftaran Karyawan Baru</h1>
+      <p class="mt-1 text-sm text-slate-500">Buat akun, lalu rekam wajah untuk presensi.</p>
 
-  <div class="mt-4 text-center">
-    <%= render "users/shared/links" %>
+      <%# Area peringatan galat %>
+      <div class="mt-5">
+        <%= render "users/shared/error_messages", resource: resource %>
+      </div>
+
+      <%= form_for(resource, as: resource_name, url: registration_path(resource_name),
+                   html: { id: "registration-form", class: "mt-6 space-y-5" }) do |f| %>
+
+        <div>
+          <%= f.label :name, "Nama Lengkap", class: label_class %>
+          <%= f.text_field :name, autofocus: true, required: true, placeholder: "Nama sesuai identitas",
+                           autocomplete: "name", class: field_class %>
+        </div>
+
+        <div>
+          <%= f.label :email, "Alamat Email", class: label_class %>
+          <%= f.email_field :email, required: true, placeholder: "nama@perusahaan.com",
+                            autocomplete: "email", class: field_class %>
+        </div>
+
+        <div class="grid gap-5 sm:grid-cols-2">
+          <div>
+            <%= f.label :password, "Kata sandi", class: label_class %>
+            <%= f.password_field :password, required: true, placeholder: "••••••••",
+                                 autocomplete: "new-password", class: field_class %>
+          </div>
+          <div>
+            <%= f.label :password_confirmation, "Konfirmasi kata sandi", class: label_class %>
+            <%= f.password_field :password_confirmation, required: true, placeholder: "••••••••",
+                                 autocomplete: "new-password", class: field_class %>
+          </div>
+        </div>
+
+        <%# Citra base64 hasil tangkapan kamera; diisi oleh skrip di bawah %>
+        <%= f.hidden_field :face_image, id: "face_image_input" %>
+
+        <button type="button" id="btn-register" disabled
+                class="group flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 font-semibold text-white shadow-lg shadow-indigo-600/25 transition hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-500/30 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none">
+          <svg id="btn-spinner" class="hidden h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" class="opacity-25"/>
+            <path d="M22 12a10 10 0 0 0-10-10" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+          </svg>
+          <span id="btn-label">Rekam wajah &amp; daftarkan akun</span>
+        </button>
+
+        <p class="text-center text-xs text-slate-400">
+          Dengan mendaftar, Anda menyetujui pemrosesan data biometrik sesuai UU Pelindungan Data Pribadi.
+        </p>
+      <% end %>
+
+      <div class="mt-6 border-t border-slate-100 pt-5 text-center text-sm text-slate-500">
+        <%= render "users/shared/links" %>
+      </div>
+    </section>
   </div>
 </div>
 
 <script>
   document.addEventListener("DOMContentLoaded", () => {
-    const video = document.getElementById('webcam');
-    const canvas = document.getElementById('canvas');
-    const form = document.getElementById('registration-form');
-    const btnRegister = document.getElementById('btn-register');
-    const hiddenImageInput = document.getElementById('face_image_input');
+    const video        = document.getElementById("webcam");
+    const canvas       = document.getElementById("canvas");
+    const form         = document.getElementById("registration-form");
+    const btnRegister  = document.getElementById("btn-register");
+    const btnLabel     = document.getElementById("btn-label");
+    const btnSpinner   = document.getElementById("btn-spinner");
+    const imageInput   = document.getElementById("face_image_input");
+    const statusPanel  = document.getElementById("camera-status");
+    const statusText   = document.getElementById("camera-status-text");
 
-    // Minta Akses Webcam
-    navigator.mediaDevices.getUserMedia({ video: true })
-      .then(stream => {
+    // Menampilkan pesan galat kamera di dalam panel (menggantikan alert()).
+    const showCameraError = (message) => {
+      statusPanel.classList.remove("hidden");
+      statusPanel.querySelector("svg").classList.add("hidden");
+      statusText.textContent = message;
+    };
+
+    // 1. Minta akses webcam; tombol baru aktif setelah video benar-benar mengalir.
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false })
+      .then((stream) => {
         video.srcObject = stream;
+        video.addEventListener("playing", () => {
+          statusPanel.classList.add("hidden");
+          btnRegister.disabled = false;
+        }, { once: true });
       })
-      .catch(err => {
-        alert("Akses kamera ditolak. Pendaftaran tidak dapat dilanjutkan.");
-        btnRegister.disabled = true;
+      .catch(() => {
+        showCameraError("Akses kamera ditolak. Izinkan kamera di pengaturan browser agar pendaftaran dapat dilanjutkan.");
       });
 
-    // Modifikasi Alur Submit
-    btnRegister.addEventListener('click', () => {
-      // 1. Validasi form dasar browser terlebih dahulu
+    // 2. Saat tombol ditekan: validasi form, tangkap satu frame, kirim form.
+    btnRegister.addEventListener("click", () => {
       if (!form.checkValidity()) {
         form.reportValidity();
         return;
       }
 
-      btnRegister.innerText = "Memproses AI & Mendaftarkan...";
       btnRegister.disabled = true;
+      btnSpinner.classList.remove("hidden");
+      btnLabel.textContent = "Memproses wajah dan mendaftarkan…";
 
-      // 2. Tangkap Gambar dari Video
-      const context = canvas.getContext('2d');
-      canvas.width = video.videoWidth;
+      // Frame digambar apa adanya (tidak dicerminkan) agar sesuai dengan data presensi.
+      canvas.width  = video.videoWidth;
       canvas.height = video.videoHeight;
-      context.drawImage(video, 0, 0, canvas.width, canvas.height);
-      
-      // 3. Masukkan ke hidden field
-      const base64Image = canvas.toDataURL('image/jpeg');
-      hiddenImageInput.value = base64Image;
+      canvas.getContext("2d").drawImage(video, 0, 0, canvas.width, canvas.height);
 
-      // 4. Lanjutkan Submit Form ke Controller Rails
+      imageInput.value = canvas.toDataURL("image/jpeg");
       form.submit();
     });
   });
